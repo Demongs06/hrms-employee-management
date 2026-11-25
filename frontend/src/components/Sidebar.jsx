@@ -16,12 +16,11 @@ export default function Sidebar({ links }) {
     <div className="w-64 bg-gray-900 text-gray-200 h-screen fixed top-0 left-0 flex flex-col">
       {/* HRMS branding */}
       <div className="p-5 flex items-center gap-3 border-b border-gray-700">
-        <div
-          aria-hidden="true"
-          className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold"
-        >
-          H
-        </div>
+        <img
+          src="https://3.imimg.com/data3/IU/NA/MY-4439715/hrms-500x500.jpg"
+          alt="HRMS logo"
+          className="w-8 h-8 rounded-lg object-cover"
+        />
         <h2 className="text-lg font-semibold">HRMS</h2>
       </div>
 
