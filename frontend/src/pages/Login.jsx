@@ -40,12 +40,11 @@ export default function Login() {
       <div className="bg-white p-8 rounded-xl shadow-lg w-96">
         {/* HRMS branding */}
         <div className="flex flex-col items-center mb-6">
-          <div
-            aria-hidden="true"
-            className="w-14 h-14 rounded-xl bg-blue-600 flex items-center justify-center text-white text-2xl font-bold mb-2"
-          >
-            H
-          </div>
+          <img
+            src="https://3.imimg.com/data3/IU/NA/MY-4439715/hrms-500x500.jpg"
+            alt="HRMS logo"
+            className="w-14 h-14 rounded-xl object-cover mb-2"
+          />
           <h1 className="text-xl font-semibold">HRMS</h1>
           <p className="text-gray-500 text-sm">Employee Management System</p>
         </div>
