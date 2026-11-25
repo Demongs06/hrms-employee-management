@@ -14,14 +14,15 @@ export default function Sidebar({ links }) {
 
   return (
     <div className="w-64 bg-gray-900 text-gray-200 h-screen fixed top-0 left-0 flex flex-col">
-
-      {/* Logo + Company */}
+      {/* HRMS branding */}
       <div className="p-5 flex items-center gap-3 border-b border-gray-700">
-        <img
-          src="https://media.licdn.com/dms/image/v2/D4D0BAQGYAw7ryBgtNw/company-logo_200_200/B4DZVBIwFeHAAM-/0/1740554568952?e=2147483647&v=beta&t=aF_T19dojI9GPkYK-Ldm8CqHRDLA0o_2f4vLJH4A_QE"
-          className="w-8 h-8 rounded-full"
-        />
-        <h2 className="text-lg font-semibold">CaryanamIndia</h2>
+        <div
+          aria-hidden="true"
+          className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold"
+        >
+          H
+        </div>
+        <h2 className="text-lg font-semibold">HRMS</h2>
       </div>
 
       {/* Navigation */}
@@ -61,16 +62,15 @@ export default function Sidebar({ links }) {
             stroke="currentColor"
             strokeWidth="2"
             viewBox="0 0 24 24"
+            aria-hidden="true"
           >
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
             <polyline points="16 17 21 12 16 7" />
             <line x1="21" y1="12" x2="9" y2="12" />
           </svg>
-
           Logout
         </button>
       </div>
-
     </div>
   );
 }
