@@ -130,6 +130,14 @@ export default function Login() {
             {loading ? "Logging in..." : "Login"}
           </button>
         </form>
+
+        <p className="mt-4 text-center text-xs text-gray-500 leading-relaxed">
+          <span className="font-semibold text-gray-700">Default employee demo credentials</span>
+          <br />
+          Email: employee@test.com
+          <br />
+          Password: Employee123
+        </p>
       </div>
     </div>
   );
