@@ -8,6 +8,7 @@ const { v2: cloudinary } = require("cloudinary");
 const { randomUUID, randomInt } = require("crypto");
 
 const app = express();
+app.set("trust proxy", 1);
 const PORT = Number(process.env.PORT) || 5000;
 const JWT_SECRET = process.env.JWT_SECRET;
 const DEMO_MODE = process.env.DEMO_MODE === "true";
@@ -18,6 +19,15 @@ if (!JWT_SECRET || JWT_SECRET.length < 32) {
 
 const allowedOrigins = (process.env.CLIENT_URL || "http://localhost:5173")
   .split(",").map((origin) => origin.trim()).filter(Boolean);
+
+app.disable("x-powered-by");
+app.use((req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  next();
+});
 
 app.use(cors({
   origin(origin, callback) {
@@ -59,6 +69,25 @@ const timeInIndia = () => new Intl.DateTimeFormat("en-GB", {
 }).format(new Date());
 
 const publicEmployee = ({ passwordHash, ...employee }) => employee;
+
+const loginAttempts = new Map();
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const LOGIN_MAX_ATTEMPTS = 10;
+const loginRateLimit = (req, res, next) => {
+  const email = cleanText(req.body?.email).toLowerCase();
+  const key = `${req.ip}:${email}`;
+  const now = Date.now();
+  for (const [entry, attempt] of loginAttempts) {
+    if (now - attempt.firstAttempt >= LOGIN_WINDOW_MS) loginAttempts.delete(entry);
+  }
+  const attempt = loginAttempts.get(key);
+  if (attempt && attempt.count >= LOGIN_MAX_ATTEMPTS && now - attempt.firstAttempt < LOGIN_WINDOW_MS) {
+    res.setHeader("Retry-After", String(Math.ceil((LOGIN_WINDOW_MS - (now - attempt.firstAttempt)) / 1000)));
+    return res.status(429).json({ message: "Too many login attempts. Try again in 15 minutes." });
+  }
+  req.loginAttemptKey = key;
+  return next();
+};
 
 const requireAuth = (req, res, next) => {
   const token = req.headers.authorization?.match(/^Bearer\s+(.+)$/i)?.[1];
@@ -110,8 +139,7 @@ const getPayslipsWithUrls = (records) => Promise.all(records.map(async (record) 
 })));
 
 async function bootstrapUsers() {
-  if (await employees.countDocuments() > 0) return;
-
+  if (await employees.countDocuments() === 0) {
   const adminEmail = cleanText(DEMO_MODE ? process.env.DEMO_ADMIN_EMAIL : process.env.ADMIN_EMAIL).toLowerCase();
   const adminPassword = DEMO_MODE ? process.env.DEMO_ADMIN_PASSWORD : process.env.ADMIN_PASSWORD;
   const adminName = cleanText(DEMO_MODE ? process.env.DEMO_ADMIN_NAME : process.env.ADMIN_NAME) || "HRMS Admin";
@@ -125,15 +153,17 @@ async function bootstrapUsers() {
     id: newId(), name: adminName, email: adminEmail, phone: "", address: "",
     passwordHash: await bcrypt.hash(adminPassword, 12), role: "admin"
   });
+  }
 
   if (!DEMO_MODE) return;
 
   const employeeEmail = cleanText(process.env.DEMO_EMPLOYEE_EMAIL).toLowerCase();
   const employeePassword = process.env.DEMO_EMPLOYEE_PASSWORD;
   if (!employeeEmail || !employeePassword || employeePassword.length < 8) {
-    console.warn("Demo admin created. Configure DEMO_EMPLOYEE_EMAIL and DEMO_EMPLOYEE_PASSWORD to seed the demo employee.");
+    console.warn("Configure DEMO_EMPLOYEE_EMAIL and DEMO_EMPLOYEE_PASSWORD to seed the demo employee.");
     return;
   }
+  if (await employees.findOne({ email: employeeEmail })) return;
 
   const demoEmployee = {
     id: newId(), name: "Alex Demo", email: employeeEmail,
@@ -141,34 +171,26 @@ async function bootstrapUsers() {
     passwordHash: await bcrypt.hash(employeePassword, 12), role: "employee"
   };
   await employees.insertOne(demoEmployee);
-  await attendance.insertMany([
-    { employeeId: demoEmployee.id, date: "2026-11-23", login: "10:02", logout: "18:58" },
-    { employeeId: demoEmployee.id, date: "2026-11-24", login: "10:05", logout: "19:01" }
-  ]);
-  await leaves.insertOne({
-    id: newId(), employeeId: demoEmployee.id, employeeName: demoEmployee.name,
-    type: "PL", startDate: "2026-12-10", endDate: "2026-12-11",
-    reason: "Personal work", status: "Pending"
-  });
-  await holidays.insertMany([
-    { id: newId(), date: "2026-12-25", name: "Christmas" },
-    { id: newId(), date: "2027-01-26", name: "Republic Day" }
-  ]);
+  console.log("Demo employee created:", employeeEmail);
 }
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", database: db ? "connected" : "disconnected" });
 });
 
-app.post("/api/login", async (req, res) => {
+app.post("/api/login", loginRateLimit, async (req, res) => {
   const email = cleanText(req.body?.email).toLowerCase();
   const password = typeof req.body?.password === "string" ? req.body.password : "";
   if (!email || !password) return res.status(400).json({ message: "Email and password are required" });
 
   const user = await employees.findOne({ email });
-  if (!user || !(await bcrypt.compare(password, user.passwordHash || ""))) {
+  if (!user || !(await bcrypt.compare(password, user.passwordHash || "$2a$12$C6UzMDM.H6dfI/f/IKcEe.7J8L7M6w2z9t5K9g4u5r7F4Xw7F2m6K"))) {
+    const attempt = loginAttempts.get(req.loginAttemptKey) || { count: 0, firstAttempt: Date.now() };
+    attempt.count += 1;
+    loginAttempts.set(req.loginAttemptKey, attempt);
     return res.status(401).json({ message: "Invalid email or password" });
   }
+  loginAttempts.delete(req.loginAttemptKey);
 
   const token = jwt.sign(
     { id: user.id, role: user.role }, JWT_SECRET,
@@ -211,9 +233,25 @@ app.get("/api/employees", requireAuth, requireRole("admin"), async (req, res) =>
 app.delete("/api/employees/:id", requireAuth, requireRole("admin"), async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isSafeInteger(id) || id <= 0) return res.status(400).json({ message: "Invalid employee ID" });
-  const result = await employees.deleteOne({ id, role: "employee" });
-  if (!result.deletedCount) return res.status(404).json({ message: "Employee not found" });
-  return res.json({ message: "Employee deleted" });
+  const employee = await employees.findOne({ id, role: "employee" });
+  if (!employee) return res.status(404).json({ message: "Employee not found" });
+
+  const employeePayslips = await payslips.find({ employeeId: id }).toArray();
+  await Promise.all([
+    attendance.deleteMany({ employeeId: id }),
+    leaves.deleteMany({ employeeId: id }),
+    payslips.deleteMany({ employeeId: id })
+  ]);
+  await employees.deleteOne({ id, role: "employee" });
+  await Promise.all(employeePayslips.map(async (payslip) => {
+    if (!cloudinaryReady || !payslip.publicId) return;
+    try {
+      await cloudinary.uploader.destroy(payslip.publicId, { resource_type: "raw", type: "authenticated" });
+    } catch (error) {
+      console.error("Failed to remove deleted employee payslip from Cloudinary:", payslip.id, error.message);
+    }
+  }));
+  return res.json({ message: "Employee and related records deleted" });
 });
 
 app.get("/api/attendance", requireAuth, async (req, res) => {
