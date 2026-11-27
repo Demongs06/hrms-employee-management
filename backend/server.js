@@ -6,6 +6,7 @@ const multer = require("multer");
 const { MongoClient } = require("mongodb");
 const { v2: cloudinary } = require("cloudinary");
 const { randomUUID, randomInt } = require("crypto");
+const { validDate } = require("./validation");
 
 const app = express();
 app.set("trust proxy", 1);
@@ -54,11 +55,7 @@ let db, employees, attendance, leaves, payslips, holidays;
 
 const newId = () => Date.now() * 1000 + randomInt(0, 1000);
 const cleanText = (value) => typeof value === "string" ? value.trim() : "";
-const validDate = (value) => {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
-  const date = new Date(value + "T00:00:00.000Z");
-  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
-};
+
 
 const todayInIndia = () => new Intl.DateTimeFormat("en-CA", {
   timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit"
