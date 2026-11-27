@@ -11,7 +11,7 @@ export default function CheckInOut() {
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
-  const user = JSON.parse(localStorage.getItem("user") || "null");
+  const user = JSON.parse(sessionStorage.getItem("user") || "null");
   const today = indiaDate();
   const todayRecord = attendance.find((record) => record.employeeId === user?.id && record.date === today);
 
