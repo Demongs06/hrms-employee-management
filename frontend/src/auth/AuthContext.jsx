@@ -4,67 +4,59 @@ import api from "../api/axios";
 
 export const AuthContext = createContext();
 
-export const AuthProvider = ({ children }) => {
-  const [auth, setAuth] = useState(() => {
-    return JSON.parse(localStorage.getItem("user")) || null;
-  });
+const readUser = () => {
+  try {
+    return JSON.parse(localStorage.getItem("user") || "null");
+  } catch {
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+    return null;
+  }
+};
 
-  //  REAL-TIME JWT EXPIRY HANDLER
+export const AuthProvider = ({ children }) => {
+  const [auth, setAuth] = useState(readUser);
+
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (!token) return;
+    if (!token || !auth) return;
 
     try {
       const decoded = jwtDecode(token);
-
-      const expiryTime = decoded.exp * 1000; // convert seconds → ms
-      const currentTime = Date.now();
-      const timeLeft = expiryTime - currentTime;
-
-      if (timeLeft <= 0) {
+      const timeLeft = decoded.exp * 1000 - Date.now();
+      if (!decoded.exp || timeLeft <= 0) {
         logout();
-      } else {
-        const timer = setTimeout(() => {
-          alert("Session expired. Please login again.");
-          logout();
-        }, timeLeft);
-
-        return () => clearTimeout(timer);
+        return;
       }
-    } catch (err) {
+      const timer = setTimeout(() => {
+        logout();
+      }, timeLeft);
+      return () => clearTimeout(timer);
+    } catch {
       logout();
     }
-  }, []);
+  }, [auth]);
 
-  // 🔐 LOGIN
   const login = async (email, password) => {
     try {
-      const res = await api.post("/login", {
-        email,
-        password
-      });
-
+      const res = await api.post("/login", { email, password });
       localStorage.setItem("token", res.data.token);
-      localStorage.setItem(
-        "user",
-        JSON.stringify(res.data.user)
-      );
-
+      localStorage.setItem("user", JSON.stringify(res.data.user));
       setAuth(res.data.user);
-
-      return true;
+      return { success: true };
     } catch (error) {
-      console.error("Login failed:", error.response?.data);
-      return false;
+      return {
+        success: false,
+        message: error.response?.data?.message || "Unable to sign in. Please try again."
+      };
     }
   };
 
-  // 🚪 LOGOUT
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setAuth(null);
-    window.location.href = "/";
+    if (window.location.pathname !== "/login") window.location.replace("/login");
   };
 
   return (
