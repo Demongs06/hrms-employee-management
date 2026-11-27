@@ -13,63 +13,34 @@ export default function Sidebar({ links }) {
   };
 
   return (
-    <div className="w-64 bg-gray-900 text-gray-200 h-screen fixed top-0 left-0 flex flex-col">
-      {/* HRMS branding */}
-      <div className="p-5 flex items-center gap-3 border-b border-gray-700">
-        <img
-          src="https://3.imimg.com/data3/IU/NA/MY-4439715/hrms-500x500.jpg"
-          alt="HRMS logo"
-          className="w-8 h-8 rounded-lg object-cover"
-        />
+    <aside className="w-full md:w-64 md:h-screen md:fixed md:top-0 md:left-0 bg-gray-900 text-gray-200 flex md:flex-col">
+      <div className="hidden md:flex p-5 items-center gap-3 border-b border-gray-700">
+        <img src="https://3.imimg.com/data3/IU/NA/MY-4439715/hrms-500x500.jpg" alt="HRMS logo" className="w-8 h-8 rounded-lg object-cover" />
         <h2 className="text-lg font-semibold">HRMS</h2>
       </div>
-
-      {/* Navigation */}
-      <div className="flex-1 px-4 py-4">
-        {links.map((link) => {
-          const active = location.pathname === link.to;
-
-          return (
-            <Link
-              key={link.to}
-              to={link.to}
-              className={`flex items-center gap-3 py-2 px-3 mb-2 rounded transition
-                ${
-                  active
-                    ? "bg-gray-800 text-white"
-                    : "hover:bg-gray-800 hover:text-white"
-                }`}
-            >
-              {link.icon}
-              {link.label}
-            </Link>
-          );
-        })}
-      </div>
-
-      {/* Logout */}
-      <div className="p-4 border-t border-gray-700">
-        <button
-          onClick={handleLogout}
-          className="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 py-2 rounded transition"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="18"
-            height="18"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-            <polyline points="16 17 21 12 16 7" />
-            <line x1="21" y1="12" x2="9" y2="12" />
-          </svg>
+      <nav aria-label="Main navigation" className="flex-1 min-w-0 px-2 md:px-4 py-3 md:py-4 overflow-x-auto md:overflow-y-auto">
+        <div className="flex md:block gap-2 min-w-max md:min-w-0">
+          {links.map((link) => {
+            const active = location.pathname.endsWith(`/${link.to}`);
+            return (
+              <Link
+                key={link.to}
+                to={link.to}
+                aria-current={active ? "page" : undefined}
+                className={`flex items-center gap-2 py-2 px-3 mb-0 md:mb-2 rounded whitespace-nowrap transition ${active ? "bg-gray-800 text-white" : "hover:bg-gray-800 hover:text-white"}`}
+              >
+                {link.icon}
+                {link.label}
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
+      <div className="p-2 md:p-4 md:border-t border-gray-700 flex items-center">
+        <button onClick={handleLogout} className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 px-3 py-2 rounded transition whitespace-nowrap">
           Logout
         </button>
       </div>
-    </div>
+    </aside>
   );
 }
