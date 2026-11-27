@@ -5,6 +5,8 @@ import api from "../api/axios";
 export const AuthContext = createContext();
 
 const readUser = () => {
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
   if (!sessionStorage.getItem("token")) {
     sessionStorage.removeItem("user");
     return null;
