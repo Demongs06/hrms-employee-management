@@ -5,15 +5,15 @@ import api from "../api/axios";
 export const AuthContext = createContext();
 
 const readUser = () => {
-  if (!localStorage.getItem("token")) {
-    localStorage.removeItem("user");
+  if (!sessionStorage.getItem("token")) {
+    sessionStorage.removeItem("user");
     return null;
   }
   try {
-    return JSON.parse(localStorage.getItem("user") || "null");
+    return JSON.parse(sessionStorage.getItem("user") || "null");
   } catch {
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
+    sessionStorage.removeItem("user");
+    sessionStorage.removeItem("token");
     return null;
   }
 };
@@ -22,7 +22,7 @@ export const AuthProvider = ({ children }) => {
   const [auth, setAuth] = useState(readUser);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = sessionStorage.getItem("token");
     if (!token || !auth) return;
 
     try {
@@ -44,8 +44,8 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const res = await api.post("/login", { email, password });
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("user", JSON.stringify(res.data.user));
+      sessionStorage.setItem("token", res.data.token);
+      sessionStorage.setItem("user", JSON.stringify(res.data.user));
       setAuth(res.data.user);
       return { success: true };
     } catch (error) {
@@ -57,8 +57,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    sessionStorage.removeItem("token");
+    sessionStorage.removeItem("user");
     setAuth(null);
     if (window.location.pathname !== "/login") window.location.replace("/login");
   };
