@@ -9,7 +9,7 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
+    const token = sessionStorage.getItem("token");
     if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
   },
@@ -22,8 +22,8 @@ api.interceptors.response.use(
     const requestHadSession = Boolean(error.config?.headers?.Authorization);
     const isLoginRequest = error.config?.url?.endsWith("/login");
     if (error.response?.status === 401 && requestHadSession && !isLoginRequest) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
+      sessionStorage.removeItem("token");
+      sessionStorage.removeItem("user");
       if (window.location.pathname !== "/login") window.location.replace("/login");
     }
     return Promise.reject(error);
