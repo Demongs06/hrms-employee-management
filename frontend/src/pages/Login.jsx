@@ -26,7 +26,7 @@ export default function Login() {
       return;
     }
 
-    const user = JSON.parse(localStorage.getItem("user"));
+    const user = JSON.parse(sessionStorage.getItem("user"));
 
     if (user.role === "admin") {
       navigate("/admin");
