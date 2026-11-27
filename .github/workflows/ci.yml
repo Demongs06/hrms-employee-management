@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: write
+
 jobs:
   backend:
     runs-on: ubuntu-latest
@@ -18,8 +21,8 @@ jobs:
         with:
           node-version: 22
       - run: npm install
-      - name: Audit backend dependencies
-        run: npm audit --json || true
+      - run: npm audit fix
+      - run: npm audit --audit-level=moderate
       - run: npm test
 
   frontend:
@@ -33,7 +36,26 @@ jobs:
         with:
           node-version: 22
       - run: npm install
-      - name: Audit frontend dependencies
-        run: npm audit --json || true
+      - run: npm audit fix
+      - run: npm audit --audit-level=moderate
       - run: npm run test -- --run
       - run: npm run build
+
+  save-lockfiles:
+    if: github.event_name == 'push'
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend/package-lock.json frontend/package-lock.json
+          if git diff --cached --quiet; then
+            echo "Dependency lockfiles are already up to date."
+          else
+            git commit -m "Update dependency lockfiles after security fixes"
+            git push
+          fi
