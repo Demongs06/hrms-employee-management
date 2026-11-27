@@ -31,7 +31,7 @@ jobs:
           cd frontend
           rm -f package-lock.json
           npm install
-          npm audit fix
+          npm update
           npm audit --audit-level=moderate
           npm run test -- --run
           npm run build
