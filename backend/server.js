@@ -183,6 +183,7 @@ app.post("/api/login", loginRateLimit, async (req, res) => {
   if (!user || !(await bcrypt.compare(password, user.passwordHash || "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy"))) {
     const attempt = loginAttempts.get(req.loginAttemptKey) || { count: 0, firstAttempt: Date.now() };
     attempt.count += 1;
+    if (loginAttempts.size >= 10000) loginAttempts.delete(loginAttempts.keys().next().value);
     loginAttempts.set(req.loginAttemptKey, attempt);
     return res.status(401).json({ message: "Invalid email or password" });
   }
