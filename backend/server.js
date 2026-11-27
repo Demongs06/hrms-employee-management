@@ -294,8 +294,8 @@ app.post("/api/leaves", requireAuth, requireRole("employee"), async (req, res) =
   const reason = cleanText(req.body?.reason);
 
   if (!["PL", "SL", "EL"].includes(type) || !validDate(startDate) ||
-      !validDate(endDate) || startDate > endDate || !reason) {
-    return res.status(400).json({ message: "Enter a valid leave type, date range and reason" });
+      !validDate(endDate) || startDate < todayInIndia() || startDate > endDate || !reason) {
+    return res.status(400).json({ message: "Enter a valid future leave date range and reason" });
   }
   if (reason.length > 1000) return res.status(400).json({ message: "Reason must be 1000 characters or fewer" });
 
@@ -327,8 +327,16 @@ app.put("/api/leaves/:id", requireAuth, requireRole("admin"), async (req, res) =
   if (!Number.isSafeInteger(id) || id <= 0 || !["Approved", "Rejected"].includes(status)) {
     return res.status(400).json({ message: "Invalid leave ID or status" });
   }
-  const result = await leaves.updateOne({ id, status: "Pending" }, { $set: { status } });
-  if (!result.modifiedCount) return res.status(404).json({ message: "Pending leave request not found" });
+  const leave = await leaves.findOne({ id, status: "Pending" });
+  if (!leave) return res.status(404).json({ message: "Pending leave request not found" });
+  if (status === "Approved") {
+    const overlap = await leaves.findOne({
+      id: { $ne: id }, employeeId: leave.employeeId, status: "Approved",
+      startDate: { $lte: leave.endDate }, endDate: { $gte: leave.startDate }
+    });
+    if (overlap) return res.status(409).json({ message: "This employee already has approved leave during those dates" });
+  }
+  await leaves.updateOne({ id, status: "Pending" }, { $set: { status } });
   return res.json({ message: "Leave updated", leave: await leaves.findOne({ id }) });
 });
 
