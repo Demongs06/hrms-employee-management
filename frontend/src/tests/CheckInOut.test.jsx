@@ -7,7 +7,7 @@ vi.mock("../api/axios");
 
 describe("CheckInOut Page", () => {
 
-  it("renders check in and check out buttons", async () => {
+  it("renders check in and check out buttons after loading attendance", async () => {
 
     api.get.mockResolvedValue({
       data: []
@@ -16,11 +16,11 @@ describe("CheckInOut Page", () => {
     render(<CheckInOut />);
 
     expect(
-      screen.getByRole("button", { name: /check in/i })
+      await screen.findByRole("button", { name: /check in/i })
     ).toBeInTheDocument();
 
     expect(
-      screen.getByRole("button", { name: /check out/i })
+      await screen.findByRole("button", { name: /check out/i })
     ).toBeInTheDocument();
 
   });
