@@ -420,6 +420,7 @@ app.use((error, req, res, next) => {
     return res.status(400).json({ message });
   }
   if (error.message === "Origin is not allowed by CORS") return res.status(403).json({ message: "Origin is not allowed" });
+  if (error.message === "Only PDF files are allowed") return res.status(400).json({ message: error.message });
   console.error(error);
   return res.status(500).json({ message: "Something went wrong. Please try again." });
 });
