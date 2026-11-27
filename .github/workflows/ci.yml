@@ -35,7 +35,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install
+      - run: rm -f package-lock.json && npm install
       - run: npm audit fix
       - run: npm audit --audit-level=moderate
       - run: npm run test -- --run
