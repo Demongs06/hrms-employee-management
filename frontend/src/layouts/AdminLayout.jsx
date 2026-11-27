@@ -13,11 +13,11 @@ export default function AdminLayout() {
   ];
 
   return (
-    <div className="flex">
+    <div className="min-h-screen md:flex">
       <Sidebar links={links} />
-      <div className="ml-64 flex-1 p-6 bg-gray-100 min-h-screen">
+      <main className="md:ml-64 flex-1 min-w-0 p-4 sm:p-6 bg-gray-100 min-h-screen">
         <Outlet />
-      </div>
+      </main>
     </div>
   );
 }
