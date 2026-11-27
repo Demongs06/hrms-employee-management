@@ -11,7 +11,7 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const loggedUser = JSON.parse(localStorage.getItem("user") || "null");
+        const loggedUser = JSON.parse(sessionStorage.getItem("user") || "null");
         setAdmin(loggedUser);
 
         const [empRes, attRes, leaveRes] = await Promise.all([
