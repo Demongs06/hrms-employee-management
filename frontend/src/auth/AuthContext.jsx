@@ -5,6 +5,10 @@ import api from "../api/axios";
 export const AuthContext = createContext();
 
 const readUser = () => {
+  if (!localStorage.getItem("token")) {
+    localStorage.removeItem("user");
+    return null;
+  }
   try {
     return JSON.parse(localStorage.getItem("user") || "null");
   } catch {
