@@ -16,7 +16,7 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const loggedUser = JSON.parse(localStorage.getItem("user") || "null");
+        const loggedUser = JSON.parse(sessionStorage.getItem("user") || "null");
         setUser(loggedUser);
         const [attRes, holRes] = await Promise.all([api.get("/attendance"), api.get("/holidays")]);
         const attendance = attRes.data.filter((record) => record.employeeId === loggedUser?.id);
