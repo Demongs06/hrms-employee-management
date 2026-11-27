@@ -111,7 +111,7 @@ const requireRole = (role) => (req, res, next) => {
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024, files: 1 },
+  limits: { fileSize: 10 * 1024 * 1024, files: 1, fields: 3, parts: 4, fieldSize: 1000 },
   fileFilter(req, file, callback) {
     if (file.mimetype !== "application/pdf") return callback(new Error("Only PDF files are allowed"));
     return callback(null, true);
@@ -146,13 +146,12 @@ async function bootstrapUsers() {
 
   if (!adminEmail || !adminPassword || adminPassword.length < 8) {
     console.warn("No users exist. Configure ADMIN_EMAIL and ADMIN_PASSWORD (or DEMO_ADMIN_EMAIL and DEMO_ADMIN_PASSWORD in demo mode) to create the first admin.");
-    return;
+  } else {
+    await employees.insertOne({
+      id: newId(), name: adminName, email: adminEmail, phone: "", address: "",
+      passwordHash: await bcrypt.hash(adminPassword, 12), role: "admin"
+    });
   }
-
-  await employees.insertOne({
-    id: newId(), name: adminName, email: adminEmail, phone: "", address: "",
-    passwordHash: await bcrypt.hash(adminPassword, 12), role: "admin"
-  });
   }
 
   if (!DEMO_MODE) return;
@@ -184,7 +183,7 @@ app.post("/api/login", loginRateLimit, async (req, res) => {
   if (!email || !password) return res.status(400).json({ message: "Email and password are required" });
 
   const user = await employees.findOne({ email });
-  if (!user || !(await bcrypt.compare(password, user.passwordHash || "$2a$12$C6UzMDM.H6dfI/f/IKcEe.7J8L7M6w2z9t5K9g4u5r7F4Xw7F2m6K"))) {
+  if (!user || !(await bcrypt.compare(password, user.passwordHash || "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy"))) {
     const attempt = loginAttempts.get(req.loginAttemptKey) || { count: 0, firstAttempt: Date.now() };
     attempt.count += 1;
     loginAttempts.set(req.loginAttemptKey, attempt);
@@ -215,13 +214,18 @@ app.post("/api/register", requireAuth, requireRole("admin"), async (req, res) =>
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ message: "Enter a valid email address" });
   if (!/^\d{10}$/.test(phone)) return res.status(400).json({ message: "Phone number must contain 10 digits" });
   if (password.length < 8) return res.status(400).json({ message: "Password must be at least 8 characters" });
-  if (await employees.findOne({ email })) return res.status(409).json({ message: "An account with this email already exists" });
+
 
   const newEmployee = {
     id: newId(), name, email, phone, address,
     passwordHash: await bcrypt.hash(password, 12), role: "employee"
   };
-  await employees.insertOne(newEmployee);
+  try {
+    await employees.insertOne(newEmployee);
+  } catch (error) {
+    if (error.code === 11000) return res.status(409).json({ message: "An account with this email already exists" });
+    throw error;
+  }
   return res.status(201).json({ message: "Employee registered", newEmployee: publicEmployee(newEmployee) });
 });
 
@@ -381,7 +385,9 @@ app.delete("/api/payslips/:id", requireAuth, requireRole("admin"), async (req, r
   const payslip = await payslips.findOne({ id });
   if (!payslip) return res.status(404).json({ message: "Payslip not found" });
 
-  await cloudinary.uploader.destroy(payslip.publicId, { resource_type: "raw", type: "authenticated" });
+  if (cloudinaryReady) {
+    await cloudinary.uploader.destroy(payslip.publicId, { resource_type: "raw", type: "authenticated" });
+  }
   await payslips.deleteOne({ id });
   return res.json({ message: "Payslip deleted" });
 });
