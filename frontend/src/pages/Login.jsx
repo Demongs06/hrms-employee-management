@@ -17,12 +17,12 @@ export default function Login() {
 
     setLoading(true);
 
-    const success = await login(email, password);
+    const result = await login(email, password);
 
     setLoading(false);
 
-    if (!success) {
-      setError("Invalid email or password");
+    if (!result.success) {
+      setError(result.message);
       return;
     }
 
@@ -65,6 +65,7 @@ export default function Login() {
               setError(null);
             }}
             className="w-full border p-2 mb-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            autoComplete="username"
             required
           />
 
@@ -79,6 +80,7 @@ export default function Login() {
                 setError(null);
               }}
               className="w-full border p-2 rounded pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              autoComplete="current-password"
               required
             />
 
