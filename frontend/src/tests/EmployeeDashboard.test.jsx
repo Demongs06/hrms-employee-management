@@ -9,7 +9,7 @@ describe("Employee Dashboard", () => {
 
   it("renders employee dashboard stats", async () => {
 
-    localStorage.setItem(
+    sessionStorage.setItem(
       "user",
       JSON.stringify({
         id: 1,
