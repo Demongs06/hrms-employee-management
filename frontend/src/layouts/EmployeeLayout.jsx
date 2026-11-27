@@ -7,15 +7,15 @@ export default function EmployeeLayout() {
     { to: "checkin", label: "Check In/Out" },
     { to: "payslips", label: "Payslips" },
     { to: "leave", label: "Apply Leave" },
-    {  to: "my-leaves", label: "My Leaves"}
+    { to: "my-leaves", label: "My Leaves" }
   ];
 
   return (
-    <div className="flex">
+    <div className="min-h-screen md:flex">
       <Sidebar links={links} />
-      <div className="ml-64 flex-1 p-6">
+      <main className="md:ml-64 flex-1 min-w-0 p-4 sm:p-6 min-h-screen">
         <Outlet />
-      </div>
+      </main>
     </div>
   );
 }
